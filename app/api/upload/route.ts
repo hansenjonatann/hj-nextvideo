@@ -1,40 +1,44 @@
 import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
-import path from "path"
+
+import {v2 as cloudinary} from 'cloudinary'
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+})
+
+
 
 
 
 export const POST = async (req: NextRequest) => {
-  const data = await req.formData()
-  const file = data.get('file') as File
-  const title = data.get('title') as string 
+  const form = await req.formData()
+  const file = form.get('file') as File
 
-  if(!file || !title) {
-    return NextResponse.json({
-      success: false , 
-      message: 'Invalid Input',
-      statusCode: 400
-    })
-  }
+  if (!file) return NextResponse.json({ error: "No file" }, { status: 400 })
 
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
 
-  const fileName = `${Date.now()}-${file.name}`
-  const uploadPath = path.join(process.cwd()  , 'public' , 'uploads' , fileName)
+  const result = await new Promise((resolve, reject) => {
+    const upload = cloudinary.uploader.upload_stream(
+      { resource_type: "video" },
+      (err, result) => {
+        if (err) reject(err)
+        else resolve(result)
+      }
+    )
+    upload.end(buffer)
+  })
 
-  const fileUrl = `/uploads/${fileName}`
-
-  const video = await db.video.create({
+  // Simpan URL ke Prisma
+  await db.video.create({
     data: {
-      title , 
-      url: fileUrl
+      title: form.get("title") as string,
+      url: (result as any).secure_url,
     }
   })
 
-  return NextResponse.json({
-    success: true, 
-    message: 'Video uploaded',
-    data: video
-  })
+  return NextResponse.json({ message: "Uploaded", url: (result as any).secure_url })
 }
