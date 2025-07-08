@@ -1,16 +1,14 @@
+export const runtime = "nodejs";   // 🚀 ini wajib supaya bukan Edge
+
 import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
+import { v2 as cloudinary } from 'cloudinary'
 
-import {v2 as cloudinary} from 'cloudinary'
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
   api_key: process.env.CLOUDINARY_API_KEY!,
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 })
-
-
-
-
 
 export const POST = async (req: NextRequest) => {
   const form = await req.formData()
@@ -32,7 +30,6 @@ export const POST = async (req: NextRequest) => {
     upload.end(buffer)
   })
 
-  // Simpan URL ke Prisma
   await db.video.create({
     data: {
       title: form.get("title") as string,
