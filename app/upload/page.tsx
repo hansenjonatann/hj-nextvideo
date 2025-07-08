@@ -1,11 +1,13 @@
 // app/upload/page.tsx
 'use client'
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState("")
+  const router = useRouter()
 
   const handleUpload = async () => {
     if (!file) return
@@ -19,7 +21,8 @@ export default function UploadPage() {
       body: formData
     })
 
-    alert("Uploaded!")
+    router.push('/')
+    
   }
 
   return (
